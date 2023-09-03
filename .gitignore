@@ -1,0 +1,8 @@
+.direnv
+result
+.env
+
+# Added by cargo
+
+/target
+e-place.md

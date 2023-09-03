@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:latest
+    networks:
+      - opbnbplace_network
+    ports:
+      - "6379:6379"
+
+  scylla:
+    image: scylladb/scylla
+    ports:
+      - "9042:9042"
+    networks:
+      - opbnbplace_network
+
+networks:
+  opbnbplace_network:
