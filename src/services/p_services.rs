@@ -1,6 +1,5 @@
 use chrono::Utc;
 use redis::Client;
-use uuid::Uuid;
 
 use crate::models::err_models::VpError;
 use crate::models::p_models::AppState;
@@ -20,11 +19,11 @@ pub async fn init_place(app_state: &AppState<'_>, redis: &Client) -> Result<(), 
     Ok(())
 }
 pub async fn diff_last_placed(
-    uid: &Uuid,
+    address: &String,
     cooldown: usize,
     scylla: &ScyllaManager,
 ) -> Result<i64, VpError> {
-    let res = scylla.get_user(uid).await;
+    let res = scylla.get_user(address).await;
     match res {
         Ok(user) => Ok(Utc::now().timestamp() - user.last_placed),
         Err(VpError::InvalidUser) => Ok(i64::try_from(cooldown)?),

@@ -5,7 +5,6 @@ use actix::{Actor, Addr, AsyncContext, Message};
 use actix_web::web;
 use actix_web_actors::ws;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
 pub struct PixelLoc {
@@ -17,9 +16,7 @@ pub struct PixelLoc {
 #[rtype(result = "()")]
 #[derive(Serialize, Deserialize)]
 pub struct UpdatePixel {
-    pub uid: Option<Uuid>,
-    pub uname: Option<String>,
-    // coordinates : (x,y)
+    pub address: Option<String>,
     pub loc: PixelLoc,
     pub color: u8,
 }

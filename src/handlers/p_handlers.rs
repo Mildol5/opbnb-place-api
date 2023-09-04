@@ -82,9 +82,8 @@ async fn update_pixel(
     // color size-> 16 colors [0,15], max val -> 15
     if req.color <= 15 {
         if req.loc.x < app_data.canvas_dim && req.loc.y < app_data.canvas_dim {
-            if req.uid.is_some() && req.uname.is_some() {
-                let time_diff: i64 =
-                    diff_last_placed(&req.uid.unwrap(), app_data.cooldown, &scylla).await?;
+            if let Some(address) = req.address.clone() {
+                let time_diff: i64 = diff_last_placed(&address, app_data.cooldown, &scylla).await?;
                 let cd = i64::try_from(app_data.cooldown).map_err(VpError::ParseIntErr)?;
                 if time_diff.ge(&cd) {
                     let offset: u32 = req.loc.x * app_data.canvas_dim + req.loc.y;
@@ -106,11 +105,10 @@ async fn update_pixel(
 
                     //execute both  database fut : )
                     tokio::try_join!(redis_fut, scylla_fut)?;
-                    // uid and uname not send to client : )
+                    // address not send to client : )
                     // pixel based query will be added as different endpoint : )
                     pu_srv.do_send(UpdatePixel {
-                        uid: None,
-                        uname: None,
+                        address: None,
                         loc: req.loc,
                         color: req.color,
                     });

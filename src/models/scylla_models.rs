@@ -3,7 +3,6 @@ use scylla::prepared_statement::PreparedStatement;
 use scylla::transport::query_result::FirstRowTypedError;
 use scylla::{FromRow, FromUserType, IntoUserType, Session, SessionBuilder};
 use serde::Serialize;
-use uuid::Uuid;
 
 use super::err_models::VpError;
 use super::p_models::UpdatePixel;
@@ -25,12 +24,12 @@ impl ScyllaBuilder {
         self.session.query("CREATE KEYSPACE IF NOT EXISTS opbnbplace WITH REPLICATION = {'class' : 'NetworkTopologyStrategy', 'replication_factor' : 1}", &[]).await?;
         //table to store User's last pixel placement
         self.session
-        .query("CREATE TABLE IF NOT EXISTS opbnbplace.player (id uuid,uname text,x int,y int,color int,last_placed timestamp,PRIMARY KEY (id))", &[])
+        .query("CREATE TABLE IF NOT EXISTS opbnbplace.player (address text,x int,y int,color int,last_placed timestamp,PRIMARY KEY (address))", &[])
         .await?;
 
         //Store All Pixel data
         // UDT to store pixel_data
-        self.session.query("CREATE TYPE IF NOT EXISTS opbnbplace.pixel_data (uname text,color int,last_placed timestamp)",&[]).await?;
+        self.session.query("CREATE TYPE IF NOT EXISTS opbnbplace.pixel_data (address text,color int,last_placed timestamp)",&[]).await?;
         //table to store all pixel update data in canvas
         // Divide the canvas into 4 parts
         //       ---------------
@@ -48,11 +47,11 @@ impl ScyllaBuilder {
 
     pub async fn try_build(self) -> Result<ScyllaManager, VpError> {
         self.init_table().await?;
-        let insert_user=self.session.prepare("INSERT INTO opbnbplace.player (id, uname, x, y, color, last_placed) VALUES (?, ?, ?, ?, ?, ?)").await?;
+        let insert_user=self.session.prepare("INSERT INTO opbnbplace.player (address, x, y, color, last_placed) VALUES (?, ?, ?, ?, ?)").await?;
         let get_user = self
             .session
             .prepare(
-                "SELECT id, uname, x, y, color, last_placed FROM opbnbplace.player WHERE id = ?",
+                "SELECT address, x, y, color, last_placed FROM opbnbplace.player WHERE address = ?",
             )
             .await?;
         let insert_pixel = self
@@ -86,8 +85,8 @@ pub struct ScyllaManager {
     canvas_part: [&'static str; 4],
 }
 impl ScyllaManager {
-    pub async fn get_user(&self, uid: &Uuid) -> Result<UserDetails, VpError> {
-        let rows = self.session.execute(&self.get_user, (uid,)).await?;
+    pub async fn get_user(&self, address: &String) -> Result<UserDetails, VpError> {
+        let rows = self.session.execute(&self.get_user, (address,)).await?;
         let res = rows.first_row_typed::<UserDetails>();
         match res {
             Ok(res) => Ok(res),
@@ -100,14 +99,13 @@ impl ScyllaManager {
         // infallible :)
         let color = i32::try_from(req.color).unwrap();
         //already checked in handler
-        let uname = req.uname.as_ref().ok_or_else(|| VpError::InvalidUser)?;
+        let address = req.address.as_ref().ok_or_else(|| VpError::InvalidUser)?;
         let last_placed = Utc::now().timestamp();
 
         // add user update
-        let user_update = self.session.execute(
-            &self.insert_user,
-            (req.uid, uname, ix, iy, color, last_placed),
-        );
+        let user_update = self
+            .session
+            .execute(&self.insert_user, (address, ix, iy, color, last_placed));
 
         // add  pixel update
         let pindex = match (req.loc.x <= self.dim_mid, req.loc.y <= self.dim_mid) {
@@ -117,7 +115,7 @@ impl ScyllaManager {
             (false, false) => 3,
         };
         let pixel_data = PixelData {
-            uname: uname.to_string(),
+            address: address.to_string(),
             color,
             last_placed,
         };
@@ -153,8 +151,7 @@ impl ScyllaManager {
 //ScyllaDb RowData
 #[derive(FromRow)]
 pub struct UserDetails {
-    pub id: Uuid,
-    pub uname: String,
+    pub address: String,
     pub x: i32,     //u32 aan sherikkum , but CQL derive does'nt support : )
     pub y: i32,     // same as above : )
     pub color: i32, // sherikkum u8
@@ -163,7 +160,7 @@ pub struct UserDetails {
 
 #[derive(IntoUserType, FromUserType, Serialize)]
 pub struct PixelData {
-    pub uname: String,
+    pub address: String,
     pub color: i32,
     pub last_placed: i64,
 }
