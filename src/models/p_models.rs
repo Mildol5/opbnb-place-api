@@ -7,6 +7,12 @@ use actix_web_actors::ws;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+#[derive(Serialize, Deserialize)]
+pub struct PixelLoc {
+    pub x: u32,
+    pub y: u32,
+}
+
 #[derive(Message)]
 #[rtype(result = "()")]
 #[derive(Serialize, Deserialize)]
@@ -14,7 +20,7 @@ pub struct UpdatePixel {
     pub uid: Option<Uuid>,
     pub uname: Option<String>,
     // coordinates : (x,y)
-    pub loc: (u32, u32),
+    pub loc: PixelLoc,
     pub color: u8,
 }
 

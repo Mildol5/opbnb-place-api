@@ -81,13 +81,13 @@ async fn update_pixel(
         .map_err(VpError::RedisErr)?;
     // color size-> 16 colors [0,15], max val -> 15
     if req.color <= 15 {
-        if req.loc.0 < app_data.canvas_dim && req.loc.1 < app_data.canvas_dim {
+        if req.loc.x < app_data.canvas_dim && req.loc.y < app_data.canvas_dim {
             if req.uid.is_some() && req.uname.is_some() {
                 let time_diff: i64 =
                     diff_last_placed(&req.uid.unwrap(), app_data.cooldown, &scylla).await?;
                 let cd = i64::try_from(app_data.cooldown).map_err(VpError::ParseIntErr)?;
                 if time_diff.ge(&cd) {
-                    let offset: u32 = req.loc.1 * app_data.canvas_dim + req.loc.0;
+                    let offset: u32 = req.loc.x * app_data.canvas_dim + req.loc.y;
                     // set redis bitmap
                     let redis_fut = async {
                         redis::cmd("bitfield")

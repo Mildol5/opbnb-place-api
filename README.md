@@ -48,6 +48,11 @@ To install and run the opbnb-place api, follow the steps below:
    docker compose up
    ```
 
+## Canvas deserialize
+
+- Each pixel color code representation as 1 nibble (4 bit) : From 0 -> 15
+- Pixel loc offset = x * DIM + y
+
 ## Todos
 
 - opbnb-place UI

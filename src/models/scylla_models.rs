@@ -96,7 +96,7 @@ impl ScyllaManager {
         }
     }
     pub async fn update_db(&self, req: &UpdatePixel) -> Result<(), VpError> {
-        let (ix, iy) = (i32::try_from(req.loc.0)?, i32::try_from(req.loc.1)?);
+        let (ix, iy) = (i32::try_from(req.loc.x)?, i32::try_from(req.loc.y)?);
         // infallible :)
         let color = i32::try_from(req.color).unwrap();
         //already checked in handler
@@ -110,7 +110,7 @@ impl ScyllaManager {
         );
 
         // add  pixel update
-        let pindex = match (req.loc.0 <= self.dim_mid, req.loc.1 <= self.dim_mid) {
+        let pindex = match (req.loc.x <= self.dim_mid, req.loc.y <= self.dim_mid) {
             (true, true) => 0,
             (true, false) => 1,
             (false, true) => 2,
